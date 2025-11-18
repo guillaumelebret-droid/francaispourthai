@@ -157,13 +157,16 @@ const App: React.FC = () => {
         <div className="h-full w-full flex flex-col bg-slate-100 relative overflow-hidden">
             {/* Header */}
             <header className="flex-none h-14 px-6 flex items-center justify-between bg-white border-b border-slate-200 z-10">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                   {/* French Flag: Blue, White, Red vertical stripes */}
                    <div className="w-8 h-5 rounded-sm overflow-hidden shadow-sm flex relative border border-slate-100">
-                        <div className="w-1/3 bg-blue-700"></div>
-                        <div className="w-1/3 bg-white"></div>
-                        <div className="w-1/3 bg-red-600"></div>
+                        <div className="w-1/3 h-full bg-blue-700"></div>
+                        <div className="w-1/3 h-full bg-white"></div>
+                        <div className="w-1/3 h-full bg-red-600"></div>
                    </div>
-                   <h1 className="font-bold text-blue-900 text-lg">Thai-French</h1>
+                   <h1 className="font-bold text-blue-900 text-lg flex items-center">
+                        Français - <span className="font-thai ml-1 font-normal">ภาษาไทย</span>
+                   </h1>
                 </div>
                 <button 
                     onClick={handleReload}
