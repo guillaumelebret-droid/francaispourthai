@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css'; // Import des styles globaux et animations 3D
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

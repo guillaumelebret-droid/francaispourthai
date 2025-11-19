@@ -1,0 +1,32 @@
+/* Styles globaux - Pas de directives @tailwind ici car on utilise le CDN */
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.font-thai {
+    font-family: 'Kanit', sans-serif;
+}
+
+/* 3D Flip Utility Classes */
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.transform-style-3d {
+    transform-style: preserve-3d;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
+
+/* Animation pour la barre de contrôles */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
