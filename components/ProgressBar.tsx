@@ -18,7 +18,10 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress }) => 
         };
 
         cards.forEach(card => {
+            // We expect the parent to pass a filtered progress object where keys MATCH card.id
+            // or pass the raw object. If logic in App.tsx filters it, the key is card.id.
             const p = progress[card.id];
+            
             if (!p || !p.lastStatus) {
                 counts.new++;
             } else {
@@ -46,44 +49,55 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress }) => 
     // Calcul du total des cartes ayant déjà un statut (déjà jouées)
     const totalReviewed = stats.again + stats.hard + stats.good + stats.easy;
 
-    // Si aucune carte n'a été jouée, on affiche une barre grise pleine (Nouveau)
-    if (totalReviewed === 0) {
-         return (
-            <div className="w-full h-4 bg-slate-200 shadow-inner overflow-hidden">
-                 <div className="h-full bg-slate-300 w-full transition-all duration-500" title={`Nouveau: ${stats.new}`} />
-            </div>
-         );
-    }
-
-    // Fonction pour calculer la largeur en pourcentage par rapport aux cartes JOUÉES seulement
-    const getWidth = (count: number) => ({ width: `${(count / totalReviewed) * 100}%` });
+    // Helper pour la largeur
+    const getWidth = (count: number) => totalReviewed > 0 ? `${(count / totalReviewed) * 100}%` : '0%';
 
     return (
-        <div className="w-full h-4 flex bg-slate-200 shadow-inner overflow-hidden">
-            {/* Je ne sais pas (Red) */}
-            <div 
-                className="h-full bg-red-500 transition-all duration-500" 
-                style={getWidth(stats.again)} 
-                title={`À revoir: ${stats.again}`}
-            />
-            {/* J'avais oublié (Orange) */}
-            <div 
-                className="h-full bg-orange-400 transition-all duration-500" 
-                style={getWidth(stats.hard)} 
-                title={`Difficile: ${stats.hard}`}
-            />
-            {/* Je me rappelle (Green) */}
-            <div 
-                className="h-full bg-green-500 transition-all duration-500" 
-                style={getWidth(stats.good)} 
-                title={`Connu: ${stats.good}`}
-            />
-            {/* C'est acquis (Blue) */}
-            <div 
-                className="h-full bg-blue-600 transition-all duration-500" 
-                style={getWidth(stats.easy)} 
-                title={`Acquis: ${stats.easy}`}
-            />
+        <div className="w-full flex flex-col bg-white shadow-sm border-b border-slate-200">
+            {/* 1. La Barre Visuelle */}
+            <div className="w-full h-2 flex bg-slate-100 overflow-hidden">
+                 {totalReviewed === 0 ? (
+                    <div className="w-full h-full bg-slate-200" />
+                 ) : (
+                    <>
+                        <div className="h-full bg-red-500 transition-all duration-500" style={{ width: getWidth(stats.again) }} />
+                        <div className="h-full bg-orange-400 transition-all duration-500" style={{ width: getWidth(stats.hard) }} />
+                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: getWidth(stats.good) }} />
+                        <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: getWidth(stats.easy) }} />
+                    </>
+                 )}
+            </div>
+
+            {/* 2. La Légende */}
+            <div className="flex items-center justify-between px-4 py-2 text-[10px] font-semibold text-slate-600 bg-slate-50">
+                
+                {/* Status Counts */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-red-500 shadow-sm"></div>
+                        <span>{stats.again}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-orange-400 shadow-sm"></div>
+                        <span>{stats.hard}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-sm"></div>
+                        <span>{stats.good}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-blue-600 shadow-sm"></div>
+                        <span>{stats.easy}</span>
+                    </div>
+                </div>
+
+                {/* Totals */}
+                <div className="flex items-center gap-2 text-slate-400">
+                    <span title="Cartes non vues">Nouveau: {stats.new}</span>
+                    <span className="w-px h-3 bg-slate-300"></span>
+                    <span title="Total des cartes">Total: {cards.length}</span>
+                </div>
+            </div>
         </div>
     );
 };

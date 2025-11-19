@@ -1,3 +1,4 @@
+
 export interface FlashcardData {
     id: string;
     thai: string;
@@ -19,6 +20,8 @@ export interface UserProgress {
     lastStatus?: ReviewStatus; // The button clicked last time
 }
 
+export type LearningDirection = 'th_fr' | 'fr_th'; // th_fr = Thai Front / French Back
+
 export interface AppState {
     cards: FlashcardData[];
     progress: Record<string, UserProgress>;
@@ -27,4 +30,5 @@ export interface AppState {
     isLoading: boolean;
     error: string | null;
     sessionCount: number;
+    direction: LearningDirection;
 }

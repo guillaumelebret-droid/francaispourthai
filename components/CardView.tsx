@@ -1,44 +1,86 @@
 
 import React from 'react';
-import { FlashcardData } from '../types';
+import { FlashcardData, LearningDirection } from '../types';
 
 interface CardViewProps {
     card: FlashcardData;
     isFlipped: boolean;
+    direction: LearningDirection;
     onFlip: () => void;
     onPlayAudio: (e: React.MouseEvent) => void;
 }
 
-export const CardView: React.FC<CardViewProps> = ({ card, isFlipped, onFlip, onPlayAudio }) => {
+export const CardView: React.FC<CardViewProps> = ({ card, isFlipped, direction, onFlip, onPlayAudio }) => {
+    
+    // Configure content based on direction
+    // th_fr: Front = Thai, Back = French
+    // fr_th: Front = French, Back = Thai
+    const isThaiFront = direction === 'th_fr';
+
+    const frontLabel = isThaiFront ? 'Thai' : 'Français';
+    const frontText = isThaiFront ? card.thai : card.french;
+    const frontLangClass = isThaiFront ? 'font-thai' : 'font-sans';
+    // Flag on Front
+    const FrontFlag = isThaiFront ? (
+        // Thai Flag
+         <div className="absolute bottom-0 left-0 w-full h-2 flex">
+             <div className="w-1/3 h-full bg-red-500"></div>
+             <div className="w-1/3 h-full bg-white"></div>
+             <div className="w-1/3 h-full bg-blue-800"></div>
+        </div>
+    ) : (
+        // French Flag
+        <div className="absolute bottom-0 left-0 w-full h-2 flex">
+             <div className="w-1/3 h-full bg-blue-700"></div>
+             <div className="w-1/3 h-full bg-white"></div>
+             <div className="w-1/3 h-full bg-red-500"></div>
+        </div>
+    );
+
+    const backLabel = isThaiFront ? 'Français' : 'Thai';
+    const backText = isThaiFront ? card.french : card.thai;
+    const backLangClass = isThaiFront ? 'font-sans' : 'font-thai';
+    // Flag on Back
+    const BackFlag = isThaiFront ? (
+        // French Flag
+        <div className="absolute bottom-0 left-0 w-full h-2 flex">
+             <div className="w-1/3 h-full bg-blue-700"></div>
+             <div className="w-1/3 h-full bg-white"></div>
+             <div className="w-1/3 h-full bg-red-500"></div>
+        </div>
+    ) : (
+        // Thai Flag
+        <div className="absolute bottom-0 left-0 w-full h-2 flex">
+             <div className="w-1/3 h-full bg-red-500"></div>
+             <div className="w-1/3 h-full bg-white"></div>
+             <div className="w-1/3 h-full bg-blue-800"></div>
+        </div>
+    );
+
     return (
         <div className="perspective-1000 w-full max-w-sm aspect-[3/4] relative cursor-pointer touch-manipulation" onClick={onFlip}>
             <div 
                 className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}
             >
-                {/* Front (Thai) */}
+                {/* Front Side */}
                 <div className="absolute w-full h-full backface-hidden rounded-3xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-2 border-blue-50 flex flex-col items-center justify-center p-8 text-center">
-                    <span className="text-blue-600 text-xs font-bold tracking-widest mb-4 uppercase opacity-60">Thai</span>
-                    <h2 className="text-6xl font-thai font-semibold text-slate-800 leading-tight select-none">
-                        {card.thai}
+                    <span className="text-blue-600 text-xs font-bold tracking-widest mb-4 uppercase opacity-60">{frontLabel}</span>
+                    <h2 className={`text-6xl font-semibold text-slate-800 leading-tight select-none ${frontLangClass}`}>
+                        {frontText}
                     </h2>
                     <p className="mt-8 text-slate-400 text-sm animate-pulse">Toucher pour révéler</p>
                     
-                    {/* Decorative flag element */}
-                    <div className="absolute bottom-0 left-0 w-full h-2 flex">
-                         <div className="w-1/3 h-full bg-red-500"></div>
-                         <div className="w-1/3 h-full bg-white"></div>
-                         <div className="w-1/3 h-full bg-blue-800"></div>
-                    </div>
+                    {FrontFlag}
                 </div>
 
-                {/* Back (French) */}
+                {/* Back Side */}
                 <div className="absolute w-full h-full backface-hidden rotate-y-180 rounded-3xl bg-blue-600 shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex flex-col items-center justify-center p-8 text-center text-white">
-                    <span className="text-blue-200 text-xs font-bold tracking-widest mb-4 uppercase opacity-80">Français</span>
-                    <h2 className="text-5xl font-bold leading-tight break-words mb-8 select-none">
-                        {card.french}
+                    <span className="text-blue-200 text-xs font-bold tracking-widest mb-4 uppercase opacity-80">{backLabel}</span>
+                    <h2 className={`text-5xl font-bold leading-tight break-words mb-8 select-none ${backLangClass}`}>
+                        {backText}
                     </h2>
                     
-                     {/* Audio Button - Enlarged for mobile accessibility */}
+                     {/* Audio Button */}
                     <button 
                         onClick={onPlayAudio}
                         className="flex items-center justify-center gap-3 px-6 py-3 bg-white text-blue-700 rounded-full shadow-md active:bg-blue-50 active:scale-95 transition-all group z-20"
@@ -49,12 +91,7 @@ export const CardView: React.FC<CardViewProps> = ({ card, isFlipped, onFlip, onP
                         <span className="text-base font-bold">Écouter</span>
                     </button>
 
-                     {/* Decorative flag element (France) */}
-                     <div className="absolute bottom-0 left-0 w-full h-2 flex">
-                         <div className="w-1/3 h-full bg-blue-700"></div>
-                         <div className="w-1/3 h-full bg-white"></div>
-                         <div className="w-1/3 h-full bg-red-500"></div>
-                    </div>
+                     {BackFlag}
                 </div>
             </div>
         </div>

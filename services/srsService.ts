@@ -1,8 +1,13 @@
 
-import { FlashcardData, UserProgress, ReviewStatus } from '../types';
+import { FlashcardData, UserProgress, ReviewStatus, LearningDirection } from '../types';
 
 const STORAGE_KEY = 'thai_french_progress';
-const MAX_ACTIVE_LEARNING_CARDS = 50; // Only limit cards that are NOT 'EASY' yet
+const MAX_ACTIVE_LEARNING_CARDS = 50; 
+
+// Helper to generate unique ID based on direction
+export const getProgressId = (cardId: string, direction: LearningDirection): string => {
+    return direction === 'th_fr' ? cardId : `${cardId}_rev`;
+};
 
 // Save progress to localStorage
 export const saveProgress = (progress: Record<string, UserProgress>) => {
@@ -23,86 +28,116 @@ export const loadProgress = (): Record<string, UserProgress> => {
     }
 };
 
-// Select the next card based on SRS logic
-export const selectNextCard = (cards: FlashcardData[], progress: Record<string, UserProgress>): FlashcardData | null => {
+// Cleanup function to remove progress for cards that no longer exist in the CSV
+export const cleanupOrphanedProgress = (
+    currentProgress: Record<string, UserProgress>, 
+    validCards: FlashcardData[]
+): Record<string, UserProgress> => {
+    const validIds = new Set(validCards.map(c => c.id));
+    const cleanedProgress: Record<string, UserProgress> = {};
+    let hasChanges = false;
+
+    Object.keys(currentProgress).forEach(key => {
+        // Check if key is a straight ID or a reverse ID (ending in _rev)
+        const baseId = key.endsWith('_rev') ? key.replace('_rev', '') : key;
+
+        if (validIds.has(baseId)) {
+            cleanedProgress[key] = currentProgress[key];
+        } else {
+            hasChanges = true;
+        }
+    });
+
+    // If we removed something, return the cleaned object, otherwise return original to preserve ref equality if possible
+    return hasChanges ? cleanedProgress : currentProgress;
+};
+
+// Select the next card based on SRS logic and direction
+export const selectNextCard = (
+    cards: FlashcardData[], 
+    progress: Record<string, UserProgress>,
+    direction: LearningDirection = 'th_fr'
+): FlashcardData | null => {
     if (cards.length === 0) return null;
 
     const now = Date.now();
     
-    // 1. Identify Due Cards (Active cards where nextReview <= now)
-    // These are the absolute priority.
+    // 1. Identify Due Cards
     const dueCards = cards.filter(card => {
-        const p = progress[card.id];
+        const pid = getProgressId(card.id, direction);
+        const p = progress[pid];
         return p && p.nextReview <= now;
     });
 
     // PRIORITY 1: Due Cards
     if (dueCards.length > 0) {
-        // Sort by due date: overdue first
         dueCards.sort((a, b) => {
-            return progress[a.id].nextReview - progress[b.id].nextReview;
+            const pA = progress[getProgressId(a.id, direction)];
+            const pB = progress[getProgressId(b.id, direction)];
+            return pA.nextReview - pB.nextReview;
         });
         return dueCards[0];
     }
 
     // 2. Progressive Mix Logic
-    // We want to introduce new cards ONLY if we aren't overwhelmed.
-    // We count how many cards are currently "In Learning" (Active but NOT Easy/Mastered).
-    const activeIds = Object.keys(progress);
-    const learningCount = activeIds.filter(id => {
-        const p = progress[id];
-        // If last status was EASY, we consider it "Mastered" enough to not block new cards.
-        // Or if reps are high enough (e.g. > 4). Let's stick to the requested "Acquis" logic.
-        return p.lastStatus !== ReviewStatus.EASY; 
-    }).length;
+    // Count learning cards specifically for this direction
+    const activeIds = Object.keys(progress).filter(k => {
+        // Simple check: if direction is th_fr, key shouldn't end in _rev (mostly)
+        // if direction is fr_th, key SHOULD end in _rev.
+        // Safest is just to assume the progress map is mixed and we filter based on current cards
+        return true; 
+    });
+
+    // Better way to count active learning cards for CURRENT direction
+    let currentDirectionLearningCount = 0;
+    cards.forEach(c => {
+        const pid = getProgressId(c.id, direction);
+        const p = progress[pid];
+        if (p && p.lastStatus !== ReviewStatus.EASY) {
+            currentDirectionLearningCount++;
+        }
+    });
 
     // PRIORITY 2: New Cards
-    // Only show a new card if we are under the limit of "difficult cards currently in rotation"
-    if (learningCount < MAX_ACTIVE_LEARNING_CARDS) {
-        // Find the first card in the CSV that has NO progress record
-        const newCard = cards.find(c => !progress[c.id]);
+    if (currentDirectionLearningCount < MAX_ACTIVE_LEARNING_CARDS) {
+        // Find the first card with NO progress record for this direction
+        const newCard = cards.find(c => !progress[getProgressId(c.id, direction)]);
         if (newCard) {
             return newCard;
         }
     }
 
     // PRIORITY 3: NO LOOPING
-    // If no cards are due NOW, and we can't add new cards (or ran out), 
-    // we return NULL. This triggers the "Congratulations" screen.
-    // We strictly DO NOT show cards scheduled for the future.
     return null;
 };
 
 // Calculate next schedule based on rating
-export const calculateNextReview = (cardId: string, rating: ReviewStatus, currentProgress?: UserProgress): UserProgress => {
+// Note: cardId passed here should already be the direction-specific ID (the key in the progress map)
+export const calculateNextReview = (progressKey: string, rating: ReviewStatus, currentProgress?: UserProgress): UserProgress => {
     const now = Date.now();
     const ONE_MINUTE = 60 * 1000;
     const ONE_DAY = 24 * 60 * 60 * 1000;
 
-    let nextInterval: number; // in ms relative to now
+    let nextInterval: number; 
     let newReps = currentProgress ? currentProgress.reps : 0;
 
     switch (rating) {
-        case ReviewStatus.AGAIN: // Je ne sais pas (Red)
+        case ReviewStatus.AGAIN: 
             newReps = 0; 
-            // Immediate retry (1 min)
             nextInterval = 1 * ONE_MINUTE; 
             break;
-        case ReviewStatus.HARD: // J'avais oublié (Orange)
-            // Reset reps slightly to ensure it comes back but not from zero
+        case ReviewStatus.HARD: 
             newReps = 0; 
             nextInterval = 5 * ONE_MINUTE; 
             break;
-        case ReviewStatus.GOOD: // Je me rappelle (Green)
+        case ReviewStatus.GOOD: 
             newReps += 1;
-            // Simple exponential backoff
-            if (newReps === 1) nextInterval = 1 * ONE_DAY;
+            if (newReps === 1) nextInterval = 0.5 * ONE_DAY; 
             else if (newReps === 2) nextInterval = 3 * ONE_DAY;
             else nextInterval = Math.pow(1.8, newReps) * ONE_DAY; 
             break;
-        case ReviewStatus.EASY: // C'est acquis (Blue)
+        case ReviewStatus.EASY: 
             newReps += 1;
-            // Big jump
             if (newReps === 1) nextInterval = 3 * ONE_DAY;
             else nextInterval = Math.pow(2.5, newReps) * ONE_DAY;
             break;
@@ -112,10 +147,10 @@ export const calculateNextReview = (cardId: string, rating: ReviewStatus, curren
     }
 
     return {
-        cardId,
+        cardId: progressKey, // Store the progressKey (e.g., "abc_rev") as the ID in the record
         nextReview: now + nextInterval,
         interval: nextInterval,
         reps: newReps,
-        lastStatus: rating // Save the specific button clicked for stats
+        lastStatus: rating 
     };
 };
