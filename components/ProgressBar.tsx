@@ -1,13 +1,14 @@
 
 import React, { useMemo } from 'react';
-import { FlashcardData, UserProgress, ReviewStatus } from '../types';
+import { FlashcardData, UserProgress, ReviewStatus, LearningDirection } from '../types';
 
 interface ProgressBarProps {
     cards: FlashcardData[];
     progress: Record<string, UserProgress>;
+    direction: LearningDirection;
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress }) => {
+export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress, direction }) => {
     const stats = useMemo(() => {
         let counts = {
             new: 0,    // Gray (No progress yet)
@@ -19,7 +20,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress }) => 
 
         cards.forEach(card => {
             // We expect the parent to pass a filtered progress object where keys MATCH card.id
-            // or pass the raw object. If logic in App.tsx filters it, the key is card.id.
             const p = progress[card.id];
             
             if (!p || !p.lastStatus) {
@@ -51,6 +51,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress }) => 
 
     // Helper pour la largeur
     const getWidth = (count: number) => totalReviewed > 0 ? `${(count / totalReviewed) * 100}%` : '0%';
+
+    const isThaiInterface = direction === 'th_fr';
+    const newText = isThaiInterface ? 'ใหม่' : 'Nouveau';
+    const totalText = isThaiInterface ? 'ทั้งหมด' : 'Total';
+    const fontClass = isThaiInterface ? 'font-thai' : 'font-sans';
 
     return (
         <div className="w-full flex flex-col bg-white shadow-sm border-b border-slate-200">
@@ -92,10 +97,10 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ cards, progress }) => 
                 </div>
 
                 {/* Totals */}
-                <div className="flex items-center gap-2 text-slate-400">
-                    <span title="Cartes non vues">Nouveau: {stats.new}</span>
+                <div className={`flex items-center gap-2 text-slate-400 ${fontClass}`}>
+                    <span title="Cartes non vues">{newText}: {stats.new}</span>
                     <span className="w-px h-3 bg-slate-300"></span>
-                    <span title="Total des cartes">Total: {cards.length}</span>
+                    <span title="Total des cartes">{totalText}: {cards.length}</span>
                 </div>
             </div>
         </div>

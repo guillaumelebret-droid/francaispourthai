@@ -7,6 +7,7 @@ import { speakText } from './services/ttsService';
 import { CardView } from './components/CardView';
 import { ControlBar } from './components/ControlBar';
 import { ProgressBar } from './components/ProgressBar';
+import { SettingsPage } from './components/SettingsPage';
 import { GOOGLE_SHEET_URL, MOCK_CSV_CONTENT } from './constants';
 
 const App: React.FC = () => {
@@ -16,6 +17,7 @@ const App: React.FC = () => {
     const [isFlipped, setIsFlipped] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showSettings, setShowSettings] = useState(false);
     
     // State for learning direction (defaults to Thai -> French)
     const [direction, setDirection] = useState<LearningDirection>(() => {
@@ -143,6 +145,8 @@ const App: React.FC = () => {
     }, [currentCard, progress, cards, direction]);
 
     const handleReload = () => {
+        // Close settings when reloading to show the fresh view
+        setShowSettings(false);
         loadData();
     };
 
@@ -194,6 +198,7 @@ const App: React.FC = () => {
         </div>
     );
 
+    // Loading View
     if (loading) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50 text-blue-600">
@@ -206,12 +211,23 @@ const App: React.FC = () => {
         );
     }
 
+    // Error View
     if (error) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center bg-slate-50">
                 <p className="text-red-500 mb-4">{error}</p>
                 <button onClick={handleReload} className="px-6 py-2 bg-blue-600 text-white rounded-full">Réessayer</button>
             </div>
+        );
+    }
+
+    // Settings View (Overlay)
+    if (showSettings) {
+        return (
+            <SettingsPage 
+                onClose={() => setShowSettings(false)} 
+                onReload={handleReload} 
+            />
         );
     }
 
@@ -288,14 +304,17 @@ const App: React.FC = () => {
 
                 </div>
                 
-                {/* Reload Button - Absolute right or pushed right */}
+                {/* Settings Button - Absolute right */}
                 <div className="absolute right-4">
                      <button 
-                        onClick={handleReload}
-                        className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                        onClick={() => setShowSettings(true)}
+                        className="p-2 text-slate-400 hover:text-blue-600 transition-colors hover:bg-slate-50 rounded-full"
+                        aria-label="Configuration"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        {/* Gear Icon */}
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </button>
                 </div>
@@ -303,7 +322,7 @@ const App: React.FC = () => {
 
             {/* Progress Bar with stats specific to direction */}
             <div className="flex-none z-10">
-                <ProgressBar cards={cards} progress={directionStats} />
+                <ProgressBar cards={cards} progress={directionStats} direction={direction} />
             </div>
 
             {/* Main Area */}
@@ -333,13 +352,13 @@ const App: React.FC = () => {
 
                         <div className="w-full max-w-md h-20 flex items-center justify-center z-10">
                             {isFlipped ? (
-                                <ControlBar isVisible={isFlipped} onRate={handleRate} />
+                                <ControlBar isVisible={isFlipped} onRate={handleRate} direction={direction} />
                             ) : (
                                  <button 
                                     onClick={handleFlip}
-                                    className="w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg active:bg-blue-700 transition-colors"
+                                    className={`w-full py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg active:bg-blue-700 transition-colors ${direction === 'th_fr' ? 'font-thai text-xl' : 'font-sans'}`}
                                 >
-                                    Voir réponse
+                                    {direction === 'th_fr' ? 'ดูคำตอบ' : 'Voir réponse'}
                                 </button>
                             )}
                         </div>
