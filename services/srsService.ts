@@ -2,7 +2,7 @@
 import { FlashcardData, UserProgress, ReviewStatus, LearningDirection } from '../types';
 
 const STORAGE_KEY = 'thai_french_progress';
-const MAX_ACTIVE_LEARNING_CARDS = 50; 
+const MAX_ACTIVE_LEARNING_CARDS = 100; 
 
 // Helper to generate unique ID based on direction
 export const getProgressId = (cardId: string, direction: LearningDirection): string => {

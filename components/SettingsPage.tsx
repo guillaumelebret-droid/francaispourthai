@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface SettingsPageProps {
@@ -6,11 +7,31 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onReload }) => {
+    
+    const handleReset = () => {
+        // Confirmation bilingue
+        const confirmed = window.confirm(
+            "Voulez-vous vraiment effacer toute votre progression et remettre l'application à zéro ?\n\nคุณต้องการลบข้อมูลความคืบหน้าทั้งหมดและรีเซ็ตแอปหรือไม่?"
+        );
+
+        if (confirmed) {
+            // Suppression des clés spécifiques utilisées par l'application
+            localStorage.removeItem('thai_french_progress');
+            localStorage.removeItem('thai_french_csv_cache');
+            localStorage.removeItem('learning_direction');
+            
+            // Rechargement complet de la page pour réinitialiser l'état
+            window.location.reload();
+        }
+    };
+
     return (
         <div className="h-full w-full flex flex-col bg-slate-50 animate-[fadeIn_0.2s_ease-out] absolute top-0 left-0 z-50">
             {/* Header */}
             <header className="flex-none h-16 px-4 flex items-center justify-between bg-white border-b border-slate-200 shadow-sm z-20">
-                <h1 className="text-lg font-bold text-slate-800">Configuration</h1>
+                <h1 className="text-lg font-bold text-slate-800">
+                    Configuration / <span className="font-thai">การตั้งค่า</span>
+                </h1>
                 <button 
                     onClick={onClose}
                     className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
@@ -26,6 +47,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onReload })
             {/* Content */}
             <main className="flex-1 overflow-y-auto p-4">
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    {/* Bouton Actualiser */}
                     <button 
                         onClick={onReload}
                         className="w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 active:bg-blue-50 transition-colors group border-b border-slate-100 last:border-0"
@@ -35,19 +57,33 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, onReload })
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col justify-center h-full">
                             <span className="text-base font-semibold text-slate-800">
-                                Actualiser / อัปเดตข้อมูล
+                                Actualiser / <span className="font-thai">อัปเดตข้อมูล</span>
                             </span>
-                            <span className="text-xs text-slate-400 mt-0.5">
-                                Recharger la liste depuis Google Sheets
+                        </div>
+                    </button>
+
+                    {/* Bouton Remise à Zéro */}
+                    <button 
+                        onClick={handleReset}
+                        className="w-full flex items-center gap-4 p-4 text-left hover:bg-red-50 active:bg-red-100 transition-colors group border-b border-slate-100 last:border-0"
+                    >
+                        <div className="p-3 bg-red-100 text-red-600 rounded-full group-active:scale-95 transition-transform shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                        <div className="flex flex-col justify-center h-full">
+                            <span className="text-base font-semibold text-red-700">
+                                Remise à Zéro / <span className="font-thai">รีเซ็ตข้อมูล</span>
                             </span>
                         </div>
                     </button>
                 </div>
                 
                 <div className="mt-6 text-center">
-                    <p className="text-xs text-slate-300">Thai-French Flashcards v1.1</p>
+                    <p className="text-xs text-slate-300">Thai-French Flashcards v1.2</p>
                 </div>
             </main>
         </div>
