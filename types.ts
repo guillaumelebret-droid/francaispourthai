@@ -1,8 +1,14 @@
 
+export interface FlashcardDetails {
+    infoLines: string[]; // Colonnes C à H (6 lignes possibles)
+    passeCompose?: string; // Colonne I
+}
+
 export interface FlashcardData {
     id: string;
     thai: string;
     french: string;
+    extras?: FlashcardDetails;
 }
 
 export enum ReviewStatus {

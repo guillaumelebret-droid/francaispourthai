@@ -1,11 +1,9 @@
 
-import { FlashcardData } from '../types';
+import { FlashcardData, FlashcardDetails } from '../types';
 
 const CSV_CACHE_KEY = 'thai_french_csv_cache';
 
 // Helper to generate a unique ID from content
-// UPDATED: Now uses a hash of the full string to prevent collisions that were occurring 
-// when truncated to 10 chars (fixing the 309 vs 707 words issue).
 const generateId = (thai: string, french: string): string => {
     const raw = `${thai}|${french}`;
     
@@ -26,7 +24,7 @@ const generateId = (thai: string, french: string): string => {
     return `${prefix}_${hashSuffix}`;
 };
 
-// Robust CSV line parser that handles quotes (e.g., "Bonjour, monde" stays as one field)
+// Robust CSV line parser that handles quotes
 const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -35,10 +33,9 @@ const parseCSVLine = (line: string): string[] => {
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
         if (char === '"') {
-            // Handle double quotes if needed, but simple toggle for now
             inQuotes = !inQuotes;
         } else if (char === ',' && !inQuotes) {
-            result.push(current); // Don't trim here yet to preserve internal spacing if needed
+            result.push(current);
             current = '';
         } else {
             current += char;
@@ -46,40 +43,52 @@ const parseCSVLine = (line: string): string[] => {
     }
     result.push(current);
     
-    // Clean up quotes and whitespace
     return result.map(s => s.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
 };
 
-// Extracted parsing logic to be used by both Network and Cache sources
 const parseCSVText = (text: string): FlashcardData[] => {
     const lines = text.split(/\r?\n/);
     const cards: FlashcardData[] = [];
-    const seenIds = new Set<string>(); // Set to track unique IDs
+    const seenIds = new Set<string>();
 
     lines.forEach((line, index) => {
         if (!line.trim()) return;
         
-        // Skip header row (Index 0) strictly as requested
+        // Skip header row
         if (index === 0) return;
 
         const parts = parseCSVLine(line);
         
         if (parts.length >= 2) {
-            // Mapping per user request: 
-            // Column A (index 0) = French
-            // Column B (index 1) = Thai
+            // Column Mapping:
+            // 0: French
+            // 1: Thai
+            // 2-7: Info Lines (C, D, E, F, G, H)
+            // 8: Passé Composé (I)
             const french = parts[0];
             const thai = parts[1];
+            
+            // Extract Extras
+            const infoLines = parts.slice(2, 8).filter(s => s && s.trim() !== '');
+            const passeCompose = parts[8] && parts[8].trim() !== '' ? parts[8] : undefined;
+
+            let extras: FlashcardDetails | undefined = undefined;
+            if (infoLines.length > 0 || passeCompose) {
+                extras = {
+                    infoLines,
+                    passeCompose
+                };
+            }
             
             if (thai && french) {
                 const id = generateId(thai, french);
                 
-                // DEDUPLICATION: Only add the card if we haven't seen this ID before
                 if (!seenIds.has(id)) {
                     cards.push({
                         id,
                         thai,
-                        french
+                        french,
+                        extras
                     });
                     seenIds.add(id);
                 }
@@ -99,7 +108,6 @@ export const fetchAndParseCSV = async (url: string): Promise<FlashcardData[]> =>
         }
         text = await response.text();
 
-        // Cache the successful fetch result
         try {
             localStorage.setItem(CSV_CACHE_KEY, text);
         } catch (e) {
@@ -109,13 +117,11 @@ export const fetchAndParseCSV = async (url: string): Promise<FlashcardData[]> =>
     } catch (error) {
         console.warn("Error fetching CSV from network, attempting to load from cache...", error);
         
-        // Fallback: Try to load from localStorage
         const cachedText = localStorage.getItem(CSV_CACHE_KEY);
         if (cachedText) {
             console.log("Loaded CSV data from local cache.");
             text = cachedText;
         } else {
-            // If no cache and no network, re-throw the error
             throw error;
         }
     }
